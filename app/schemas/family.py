@@ -13,7 +13,7 @@ class Individual(IndividualBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class RelationshipCreate(BaseModel):
     parent_id: int
