@@ -16,6 +16,29 @@ alembic upgrade head
 uvicorn app.main:app --reload
 ```
 
+### Running the test suite
+
+A basic integration test suite exercises the individuals CRUD endpoints using
+FastAPI's `TestClient`. To run the tests make sure `pytest` is installed
+(which you can add via `pip install pytest`), then:
+
+```bash
+# from project root
+PYTHONPATH=. pytest
+```
+
+You can target a single file or test function with the same command, e.g.
+
+```bash
+PYTHONPATH=. pytest tests/test_individuals.py
+PYTHONPATH=. pytest tests/test_individuals.py::test_individuals_crud
+```
+
+The tests automatically recreate `test.db` before each run, so they start
+from a clean database. When you add new endpoints later, simply extend the
+`tests/test_individuals.py` file or create additional test modules.
+
+
 ## Features
 
 - Store individuals and relationships (parent, spouse, child)
