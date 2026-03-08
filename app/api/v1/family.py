@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.db import get_db
@@ -98,3 +99,58 @@ def delete_relationship(relationship_id: int, db: Session = Depends(get_db)):
     db.delete(relationship)
     db.commit()
     return {"message": f"Relationship {relationship_id} deleted successfully"}
+
+
+@router.post("/marriages/", response_model=schemas.Marriage)
+def create_marriage(mar: schemas.MarriageCreate, db: Session = Depends(get_db)):
+    if mar.partner1_id == mar.partner2_id:
+        raise HTTPException(status_code=400, detail="Marriage partners must be different individuals")
+
+    partner1 = db.query(Individual).filter(Individual.id == mar.partner1_id).first()
+    if not partner1:
+        raise HTTPException(status_code=404, detail="Partner 1 not found")
+
+    partner2 = db.query(Individual).filter(Individual.id == mar.partner2_id).first()
+    if not partner2:
+        raise HTTPException(status_code=404, detail="Partner 2 not found")
+
+    # Marriage is symmetric, so treat (A, B) as duplicate of (B, A).
+    existing_marriage = db.query(Marriage).filter(
+        or_(
+            and_(Marriage.partner1_id == mar.partner1_id, Marriage.partner2_id == mar.partner2_id),
+            and_(Marriage.partner1_id == mar.partner2_id, Marriage.partner2_id == mar.partner1_id),
+        )
+    ).first()
+    if existing_marriage:
+        raise HTTPException(status_code=400, detail="Marriage already exists")
+
+    marriage = Marriage(partner1_id=mar.partner1_id, partner2_id=mar.partner2_id, date=mar.date)
+    db.add(marriage)
+    db.commit()
+    db.refresh(marriage)
+    return marriage
+
+
+@router.get("/marriages/", response_model=List[schemas.Marriage])
+def list_marriages(db: Session = Depends(get_db)):
+    marriages = db.query(Marriage).all()
+    return marriages
+
+
+@router.get("/marriages/{marriage_id}", response_model=schemas.Marriage)
+def get_marriage(marriage_id: int, db: Session = Depends(get_db)):
+    marriage = db.query(Marriage).filter(Marriage.id == marriage_id).first()
+    if not marriage:
+        raise HTTPException(status_code=404, detail="Marriage not found")
+    return marriage
+
+
+@router.delete("/marriages/{marriage_id}")
+def delete_marriage(marriage_id: int, db: Session = Depends(get_db)):
+    marriage = db.query(Marriage).filter(Marriage.id == marriage_id).first()
+    if not marriage:
+        raise HTTPException(status_code=404, detail="Marriage not found")
+
+    db.delete(marriage)
+    db.commit()
+    return {"message": f"Marriage {marriage_id} deleted successfully"}

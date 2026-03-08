@@ -30,3 +30,20 @@ class Relationship(RelationshipBase):
 
     class Config:
         from_attributes = True
+
+
+class MarriageBase(BaseModel):
+    partner1_id: int
+    partner2_id: int
+    date: Optional[str] = None
+
+
+class MarriageCreate(MarriageBase):
+    pass
+
+
+class Marriage(MarriageBase):
+    id: int
+
+    class Config:
+        from_attributes = True

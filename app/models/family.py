@@ -12,10 +12,15 @@ class Individual(Base):
 
     parents = relationship("Relationship", back_populates="child", foreign_keys="[Relationship.child_id]")
     children = relationship("Relationship", back_populates="parent", foreign_keys="[Relationship.parent_id]")
-    spouses = relationship(
+    marriages_as_partner1 = relationship(
         "Marriage",
-        primaryjoin="or_(Individual.id==Marriage.partner1_id, Individual.id==Marriage.partner2_id)",
-        back_populates="partners"
+        foreign_keys="[Marriage.partner1_id]",
+        back_populates="partner1",
+    )
+    marriages_as_partner2 = relationship(
+        "Marriage",
+        foreign_keys="[Marriage.partner2_id]",
+        back_populates="partner2",
     )
 
 class Relationship(Base):
@@ -37,4 +42,5 @@ class Marriage(Base):
     partner2_id = Column(Integer, ForeignKey('individuals.id'))
     date = Column(String, nullable=True)
 
-    partners = relationship("Individual", primaryjoin="or_(Marriage.partner1_id==Individual.id, Marriage.partner2_id==Individual.id)")
+    partner1 = relationship("Individual", foreign_keys=[partner1_id], back_populates="marriages_as_partner1")
+    partner2 = relationship("Individual", foreign_keys=[partner2_id], back_populates="marriages_as_partner2")
