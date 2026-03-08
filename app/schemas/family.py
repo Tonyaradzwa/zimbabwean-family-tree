@@ -15,7 +15,18 @@ class Individual(IndividualBase):
     class Config:
         from_attributes = True
 
-class RelationshipCreate(BaseModel):
+class RelationshipBase(BaseModel):
     parent_id: int
     child_id: int
     type: str = 'biological'
+
+
+class RelationshipCreate(RelationshipBase):
+    pass
+
+
+class Relationship(RelationshipBase):
+    id: int
+
+    class Config:
+        from_attributes = True
