@@ -1,9 +1,216 @@
-# Placeholder for kinship logic, e.g. mapping English to Shona terms
-def get_shona_kinship(relationship: str, gender: str) -> str:
-    mapper = {
+from collections import deque
+from typing import Dict, Optional, Set
+
+from sqlalchemy.orm import Session
+
+from app.models.family import Individual, Marriage, Relationship
+
+
+def _build_parent_map(db: Session) -> Dict[int, Set[int]]:
+    parent_map: Dict[int, Set[int]] = {}
+    rows = db.query(Relationship.parent_id, Relationship.child_id).all()
+    for parent_id, child_id in rows:
+        parent_map.setdefault(child_id, set()).add(parent_id)
+    return parent_map
+
+
+def _build_child_map(db: Session) -> Dict[int, Set[int]]:
+    child_map: Dict[int, Set[int]] = {}
+    rows = db.query(Relationship.parent_id, Relationship.child_id).all()
+    for parent_id, child_id in rows:
+        child_map.setdefault(parent_id, set()).add(child_id)
+    return child_map
+
+
+def _build_spouse_map(db: Session) -> Dict[int, Set[int]]:
+    spouse_map: Dict[int, Set[int]] = {}
+    rows = db.query(Marriage.partner1_id, Marriage.partner2_id).all()
+    for partner1_id, partner2_id in rows:
+        spouse_map.setdefault(partner1_id, set()).add(partner2_id)
+        spouse_map.setdefault(partner2_id, set()).add(partner1_id)
+    return spouse_map
+
+
+def _build_gender_map(db: Session) -> Dict[int, str]:
+    rows = db.query(Individual.id, Individual.gender).all()
+    return {individual_id: gender for individual_id, gender in rows}
+
+
+def _distance_via_edges(graph: Dict[int, Set[int]], start_id: int, target_id: int) -> Optional[int]:
+    if start_id == target_id:
+        return 0
+
+    visited = {start_id}
+    queue = deque([(start_id, 0)])
+
+    while queue:
+        current, depth = queue.popleft()
+        for next_node in graph.get(current, set()):
+            if next_node == target_id:
+                return depth + 1
+            if next_node not in visited:
+                visited.add(next_node)
+                queue.append((next_node, depth + 1))
+
+    return None
+
+
+def _ancestor_distance(parent_map: Dict[int, Set[int]], person_id: int, maybe_ancestor_id: int) -> Optional[int]:
+    return _distance_via_edges(parent_map, person_id, maybe_ancestor_id)
+
+
+def _descendant_distance(child_map: Dict[int, Set[int]], person_id: int, maybe_descendant_id: int) -> Optional[int]:
+    return _distance_via_edges(child_map, person_id, maybe_descendant_id)
+
+
+def _make_ancestor_label(distance: int, gender: Optional[str]) -> str:
+    if distance == 1:
+        return "father" if gender == "male" else "mother" if gender == "female" else "parent"
+    if distance == 2:
+        return "grandfather" if gender == "male" else "grandmother" if gender == "female" else "grandparent"
+    return "ancestor"
+
+
+def _make_descendant_label(distance: int, gender: Optional[str]) -> str:
+    if distance == 1:
+        return "son" if gender == "male" else "daughter" if gender == "female" else "child"
+    if distance == 2:
+        return "grandson" if gender == "male" else "granddaughter" if gender == "female" else "grandchild"
+    return "descendant"
+
+
+def infer_relationship(db: Session, person_id: int, relative_id: int) -> str:
+    parent_map = _build_parent_map(db)
+    child_map = _build_child_map(db)
+    spouse_map = _build_spouse_map(db)
+    gender_map = _build_gender_map(db)
+
+    if person_id == relative_id:
+        return "self"
+
+    if relative_id in spouse_map.get(person_id, set()):
+        relative_gender = gender_map.get(relative_id)
+        if relative_gender == "male":
+            return "husband"
+        if relative_gender == "female":
+            return "wife"
+        return "spouse"
+
+    ancestor_distance = _ancestor_distance(parent_map, person_id, relative_id)
+    if ancestor_distance:
+        return _make_ancestor_label(ancestor_distance, gender_map.get(relative_id))
+
+    descendant_distance = _descendant_distance(child_map, person_id, relative_id)
+    if descendant_distance:
+        return _make_descendant_label(descendant_distance, gender_map.get(relative_id))
+
+    person_parents = parent_map.get(person_id, set())
+    relative_parents = parent_map.get(relative_id, set())
+    if person_parents and relative_parents and person_parents.intersection(relative_parents):
+        relative_gender = gender_map.get(relative_id)
+        if relative_gender == "male":
+            return "brother"
+        if relative_gender == "female":
+            return "sister"
+        return "sibling"
+
+    parent_siblings: Set[int] = set()
+    for parent_id in person_parents:
+        parent_parent_ids = parent_map.get(parent_id, set())
+        if not parent_parent_ids:
+            continue
+        for maybe_sibling_id, maybe_sibling_parents in parent_map.items():
+            if maybe_sibling_id == parent_id:
+                continue
+            if parent_parent_ids.intersection(maybe_sibling_parents):
+                parent_siblings.add(maybe_sibling_id)
+
+    if relative_id in parent_siblings:
+        relative_gender = gender_map.get(relative_id)
+        if relative_gender == "male":
+            return "uncle"
+        if relative_gender == "female":
+            return "aunt"
+        return "parent_sibling"
+
+    siblings = set()
+    for maybe_sibling_id, maybe_sibling_parents in parent_map.items():
+        if maybe_sibling_id == person_id:
+            continue
+        if person_parents and person_parents.intersection(maybe_sibling_parents):
+            siblings.add(maybe_sibling_id)
+
+    sibling_children: Set[int] = set()
+    for sibling_id in siblings:
+        sibling_children.update(child_map.get(sibling_id, set()))
+
+    if relative_id in sibling_children:
+        relative_gender = gender_map.get(relative_id)
+        if relative_gender == "male":
+            return "nephew"
+        if relative_gender == "female":
+            return "niece"
+        return "sibling_child"
+
+    person_grandparents: Set[int] = set()
+    for parent_id in person_parents:
+        person_grandparents.update(parent_map.get(parent_id, set()))
+
+    relative_grandparents: Set[int] = set()
+    for parent_id in relative_parents:
+        relative_grandparents.update(parent_map.get(parent_id, set()))
+
+    if person_grandparents and relative_grandparents and person_grandparents.intersection(relative_grandparents):
+        return "cousin"
+
+    return "relative"
+
+
+def get_shona_kinship(relationship: str, gender: Optional[str] = None) -> str:
+    key = relationship.lower().strip()
+
+    # TODO: Make sibling/kin terms speaker-aware (e.g., "hanzvadzi" varies by caller and relative gender).
+    base_map = {
+        "self": "ini",
         "father": "baba",
         "mother": "amai",
-        "uncle": "sekuru" if gender == "male" else "tete",
-        # Expand mapping...
+        "parent": "mubereki",
+        "grandfather": "sekuru",
+        "grandmother": "ambuya",
+        "grandparent": "mudzukuru mukuru",
+        "son": "mwanakomana",
+        "daughter": "mwanasikana",
+        "child": "mwana",
+        "grandson": "muzukuru",
+        "granddaughter": "muzukuru",
+        "grandchild": "muzukuru",
+        "brother": "hanzvadzi",
+        "sister": "hanzvadzi",
+        "sibling": "hanzvadzi",
+        "husband": "murume",
+        "wife": "mukadzi",
+        "spouse": "wawakaroorana naye",
+        "uncle": "sekuru",
+        "aunt": "tete",
+        "nephew": "muzukuru",
+        "niece": "muzukuru",
+        "cousin": "hama",
+        "ancestor": "mudzinza wekare",
+        "descendant": "wemudzinza",
+        "relative": "hama",
     }
-    return mapper.get(relationship.lower(), relationship)
+
+    if key in {"uncle", "aunt", "parent_sibling"}:
+        if gender == "male":
+            return "sekuru"
+        if gender == "female":
+            return "tete"
+
+    return base_map.get(key, relationship)
+
+
+def infer_shona_kinship(db: Session, person_id: int, relative_id: int) -> str:
+    relationship = infer_relationship(db, person_id, relative_id)
+    relative = db.query(Individual).filter(Individual.id == relative_id).first()
+    gender = relative.gender if relative else None
+    return get_shona_kinship(relationship, gender)
