@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models.family import Individual, Relationship, Marriage
+from app.services.kinship import infer_relationship, infer_shona_kinship
 from app import schemas
 from typing import List
 
@@ -154,3 +155,24 @@ def delete_marriage(marriage_id: int, db: Session = Depends(get_db)):
     db.delete(marriage)
     db.commit()
     return {"message": f"Marriage {marriage_id} deleted successfully"}
+
+
+@router.get("/kinship/", response_model=schemas.KinshipResult)
+def get_kinship(person_id: int, relative_id: int, db: Session = Depends(get_db)):
+    person = db.query(Individual).filter(Individual.id == person_id).first()
+    if not person:
+        raise HTTPException(status_code=404, detail="Person not found")
+
+    relative = db.query(Individual).filter(Individual.id == relative_id).first()
+    if not relative:
+        raise HTTPException(status_code=404, detail="Relative not found")
+
+    english_relationship = infer_relationship(db, person_id, relative_id)
+    shona_relationship = infer_shona_kinship(db, person_id, relative_id)
+
+    return {
+        "person_id": person_id,
+        "relative_id": relative_id,
+        "english_relationship": english_relationship,
+        "shona_relationship": shona_relationship,
+    }

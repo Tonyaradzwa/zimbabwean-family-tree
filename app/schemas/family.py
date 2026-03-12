@@ -47,3 +47,10 @@ class Marriage(MarriageBase):
 
     class Config:
         from_attributes = True
+
+
+class KinshipResult(BaseModel):
+    person_id: int
+    relative_id: int
+    english_relationship: str
+    shona_relationship: str
