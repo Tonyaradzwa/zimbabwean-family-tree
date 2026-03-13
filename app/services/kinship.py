@@ -213,4 +213,16 @@ def infer_shona_kinship(db: Session, person_id: int, relative_id: int) -> str:
     relationship = infer_relationship(db, person_id, relative_id)
     relative = db.query(Individual).filter(Individual.id == relative_id).first()
     gender = relative.gender if relative else None
+
+    # Nuance: all of a person's mother's brothers are called sekuru.
+    if relationship == "uncle":
+        parent_map = _build_parent_map(db)
+        gender_map = _build_gender_map(db)
+        for parent_id in parent_map.get(person_id, set()):
+            if gender_map.get(parent_id) == "female":  # this parent is the mother
+                mother_parents = parent_map.get(parent_id, set())
+                uncle_parents = parent_map.get(relative_id, set())
+                if mother_parents and mother_parents.intersection(uncle_parents):
+                    return "sekuru"
+
     return get_shona_kinship(relationship, gender)

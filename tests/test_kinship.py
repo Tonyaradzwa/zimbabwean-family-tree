@@ -90,3 +90,39 @@ def test_infer_shona_kinship():
         assert infer_shona_kinship(db, 6, 2) == "ambuya"
     finally:
         db.close()
+
+
+def test_maternal_uncle_is_sekuru():
+    """Nuance 1: all of a person's mother's brothers are called sekuru."""
+    db = SessionLocal()
+    try:
+        # Maternal grandparents
+        mgf = Individual(name="MaternalGF", gender="male", birth_date="1930-01-01")
+        mgm = Individual(name="MaternalGM", gender="female", birth_date="1935-01-01")
+        # Amai and her brother (the maternal uncle)
+        amai = Individual(name="Amai", gender="female", birth_date="1973-01-01")
+        va_sekuru = Individual(name="VaSekuru", gender="male", birth_date="1970-01-01")
+        # Father (paternal side has no shared grandparents with va_sekuru)
+        baba = Individual(name="Baba", gender="male", birth_date="1970-01-01")
+        # Child
+        mwana = Individual(name="Mwana", gender="male", birth_date="2000-01-01")
+
+        db.add_all([mgf, mgm, amai, va_sekuru, baba, mwana])
+        db.commit()
+
+        # Amai and VaSekuru share the same parents (maternal grandparents)
+        db.add_all([
+            Relationship(parent_id=mgf.id, child_id=amai.id, type="biological"),
+            Relationship(parent_id=mgm.id, child_id=amai.id, type="biological"),
+            Relationship(parent_id=mgf.id, child_id=va_sekuru.id, type="biological"),
+            Relationship(parent_id=mgm.id, child_id=va_sekuru.id, type="biological"),
+            # Mwana's parents
+            Relationship(parent_id=amai.id, child_id=mwana.id, type="biological"),
+            Relationship(parent_id=baba.id, child_id=mwana.id, type="biological"),
+        ])
+        db.commit()
+
+        assert infer_relationship(db, mwana.id, va_sekuru.id) == "uncle"
+        assert infer_shona_kinship(db, mwana.id, va_sekuru.id) == "sekuru"
+    finally:
+        db.close()
