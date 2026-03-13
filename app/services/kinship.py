@@ -176,10 +176,13 @@ def infer_relationship(db: Session, person_id: int, relative_id: int) -> str:
     return "relative"
 
 
-def get_shona_kinship(relationship: str, gender: Optional[str] = None) -> str:
+def get_shona_kinship(
+    relationship: str,
+    relative_gender: Optional[str] = None,
+    person_gender: Optional[str] = None,
+) -> str:
     key = relationship.lower().strip()
 
-    # TODO: Make sibling/kin terms speaker-aware (e.g., "hanzvadzi" varies by caller and relative gender).
     base_map = {
         "self": "ini",
         "father": "baba",
@@ -210,10 +213,16 @@ def get_shona_kinship(relationship: str, gender: Optional[str] = None) -> str:
         "relative": "hama",
     }
 
+    # Nuance: sibling terms are speaker-aware in this project.
+    if key in {"brother", "sister"} and person_gender in {"male", "female"}:
+        if key == "brother":
+            return "mukoma" if person_gender == "male" else "handzvadzi"
+        return "handzvadzi" if person_gender == "male" else "mukoma"
+
     if key in {"uncle", "aunt", "parent_sibling"}:
-        if gender == "male":
+        if relative_gender == "male":
             return "sekuru"
-        if gender == "female":
+        if relative_gender == "female":
             return "tete"
 
     return base_map.get(key, relationship)
@@ -223,7 +232,8 @@ def infer_shona_kinship(db: Session, person_id: int, relative_id: int) -> str:
     relationship = infer_relationship(db, person_id, relative_id)
     person = db.query(Individual).filter(Individual.id == person_id).first()
     relative = db.query(Individual).filter(Individual.id == relative_id).first()
-    gender = relative.gender if relative else None
+    relative_gender = relative.gender if relative else None
+    person_gender = person.gender if person else None
 
     # Nuance: all of a person's mother's brothers are called sekuru.
     if relationship == "uncle":
@@ -263,4 +273,4 @@ def infer_shona_kinship(db: Session, person_id: int, relative_id: int) -> str:
                     if is_older is False:
                         return "mainini"
 
-    return get_shona_kinship(relationship, gender)
+    return get_shona_kinship(relationship, relative_gender, person_gender)

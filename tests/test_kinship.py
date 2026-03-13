@@ -222,3 +222,65 @@ def test_mothers_younger_sister_is_mainini():
         assert infer_shona_kinship(db, mwana.id, mainini.id) == "mainini"
     finally:
         db.close()
+
+
+def test_female_speaker_sibling_terms():
+    """Nuance 4a: female speaker calls brother handzvadzi and sister mukoma."""
+    db = SessionLocal()
+    try:
+        parent1 = Individual(name="Parent1", gender="male", birth_date="1970-01-01")
+        parent2 = Individual(name="Parent2", gender="female", birth_date="1972-01-01")
+        sister = Individual(name="Sister", gender="female", birth_date="2000-01-01")
+        speaker = Individual(name="FemaleSpeaker", gender="female", birth_date="2002-01-01")
+        brother = Individual(name="Brother", gender="male", birth_date="2004-01-01")
+
+        db.add_all([parent1, parent2, sister, speaker, brother])
+        db.commit()
+
+        db.add_all([
+            Relationship(parent_id=parent1.id, child_id=sister.id, type="biological"),
+            Relationship(parent_id=parent2.id, child_id=sister.id, type="biological"),
+            Relationship(parent_id=parent1.id, child_id=speaker.id, type="biological"),
+            Relationship(parent_id=parent2.id, child_id=speaker.id, type="biological"),
+            Relationship(parent_id=parent1.id, child_id=brother.id, type="biological"),
+            Relationship(parent_id=parent2.id, child_id=brother.id, type="biological"),
+        ])
+        db.commit()
+
+        assert infer_relationship(db, speaker.id, brother.id) == "brother"
+        assert infer_relationship(db, speaker.id, sister.id) == "sister"
+        assert infer_shona_kinship(db, speaker.id, brother.id) == "handzvadzi"
+        assert infer_shona_kinship(db, speaker.id, sister.id) == "mukoma"
+    finally:
+        db.close()
+
+
+def test_male_speaker_sibling_terms():
+    """Nuance 4b: male speaker calls sister handzvadzi and brother mukoma."""
+    db = SessionLocal()
+    try:
+        parent1 = Individual(name="Parent1", gender="male", birth_date="1970-01-01")
+        parent2 = Individual(name="Parent2", gender="female", birth_date="1972-01-01")
+        sister = Individual(name="Sister", gender="female", birth_date="2000-01-01")
+        speaker = Individual(name="MaleSpeaker", gender="male", birth_date="2002-01-01")
+        brother = Individual(name="Brother", gender="male", birth_date="2004-01-01")
+
+        db.add_all([parent1, parent2, sister, speaker, brother])
+        db.commit()
+
+        db.add_all([
+            Relationship(parent_id=parent1.id, child_id=sister.id, type="biological"),
+            Relationship(parent_id=parent2.id, child_id=sister.id, type="biological"),
+            Relationship(parent_id=parent1.id, child_id=speaker.id, type="biological"),
+            Relationship(parent_id=parent2.id, child_id=speaker.id, type="biological"),
+            Relationship(parent_id=parent1.id, child_id=brother.id, type="biological"),
+            Relationship(parent_id=parent2.id, child_id=brother.id, type="biological"),
+        ])
+        db.commit()
+
+        assert infer_relationship(db, speaker.id, sister.id) == "sister"
+        assert infer_relationship(db, speaker.id, brother.id) == "brother"
+        assert infer_shona_kinship(db, speaker.id, sister.id) == "handzvadzi"
+        assert infer_shona_kinship(db, speaker.id, brother.id) == "mukoma"
+    finally:
+        db.close()
