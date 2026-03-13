@@ -126,3 +126,39 @@ def test_maternal_uncle_is_sekuru():
         assert infer_shona_kinship(db, mwana.id, va_sekuru.id) == "sekuru"
     finally:
         db.close()
+
+
+def test_paternal_aunt_is_tete():
+    """Nuance 2: all of a person's father's sisters are called tete."""
+    db = SessionLocal()
+    try:
+        # Paternal grandparents
+        pgf = Individual(name="PaternalGF", gender="male", birth_date="1930-01-01")
+        pgm = Individual(name="PaternalGM", gender="female", birth_date="1935-01-01")
+        # Baba and his sister (the paternal aunt)
+        baba = Individual(name="Baba", gender="male", birth_date="1970-01-01")
+        tete = Individual(name="Tete", gender="female", birth_date="1972-01-01")
+        # Mother lives on a separate branch
+        amai = Individual(name="Amai", gender="female", birth_date="1973-01-01")
+        # Child
+        mwana = Individual(name="Mwana", gender="male", birth_date="2000-01-01")
+
+        db.add_all([pgf, pgm, baba, tete, amai, mwana])
+        db.commit()
+
+        # Baba and Tete share the same parents (paternal grandparents)
+        db.add_all([
+            Relationship(parent_id=pgf.id, child_id=baba.id, type="biological"),
+            Relationship(parent_id=pgm.id, child_id=baba.id, type="biological"),
+            Relationship(parent_id=pgf.id, child_id=tete.id, type="biological"),
+            Relationship(parent_id=pgm.id, child_id=tete.id, type="biological"),
+            # Mwana's parents
+            Relationship(parent_id=baba.id, child_id=mwana.id, type="biological"),
+            Relationship(parent_id=amai.id, child_id=mwana.id, type="biological"),
+        ])
+        db.commit()
+
+        assert infer_relationship(db, mwana.id, tete.id) == "aunt"
+        assert infer_shona_kinship(db, mwana.id, tete.id) == "tete"
+    finally:
+        db.close()

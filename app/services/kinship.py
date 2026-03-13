@@ -225,4 +225,15 @@ def infer_shona_kinship(db: Session, person_id: int, relative_id: int) -> str:
                 if mother_parents and mother_parents.intersection(uncle_parents):
                     return "sekuru"
 
+    # Nuance: all of a person's father's sisters are called tete.
+    if relationship == "aunt":
+        parent_map = _build_parent_map(db)
+        gender_map = _build_gender_map(db)
+        for parent_id in parent_map.get(person_id, set()):
+            if gender_map.get(parent_id) == "male":  # this parent is the father
+                father_parents = parent_map.get(parent_id, set())
+                aunt_parents = parent_map.get(relative_id, set())
+                if father_parents and father_parents.intersection(aunt_parents):
+                    return "tete"
+
     return get_shona_kinship(relationship, gender)
