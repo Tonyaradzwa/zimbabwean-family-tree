@@ -162,3 +162,63 @@ def test_paternal_aunt_is_tete():
         assert infer_shona_kinship(db, mwana.id, tete.id) == "tete"
     finally:
         db.close()
+
+
+def test_mothers_older_sister_is_maiguru():
+    """Nuance 3a: all of a person's mother's older sisters are called maiguru."""
+    db = SessionLocal()
+    try:
+        mgf = Individual(name="MaternalGF", gender="male", birth_date="1930-01-01")
+        mgm = Individual(name="MaternalGM", gender="female", birth_date="1935-01-01")
+        maiguru = Individual(name="Maiguru", gender="female", birth_date="1970-01-01")
+        amai = Individual(name="Amai", gender="female", birth_date="1973-01-01")
+        baba = Individual(name="Baba", gender="male", birth_date="1970-01-01")
+        mwana = Individual(name="Mwana", gender="male", birth_date="2000-01-01")
+
+        db.add_all([mgf, mgm, maiguru, amai, baba, mwana])
+        db.commit()
+
+        db.add_all([
+            Relationship(parent_id=mgf.id, child_id=maiguru.id, type="biological"),
+            Relationship(parent_id=mgm.id, child_id=maiguru.id, type="biological"),
+            Relationship(parent_id=mgf.id, child_id=amai.id, type="biological"),
+            Relationship(parent_id=mgm.id, child_id=amai.id, type="biological"),
+            Relationship(parent_id=amai.id, child_id=mwana.id, type="biological"),
+            Relationship(parent_id=baba.id, child_id=mwana.id, type="biological"),
+        ])
+        db.commit()
+
+        assert infer_relationship(db, mwana.id, maiguru.id) == "aunt"
+        assert infer_shona_kinship(db, mwana.id, maiguru.id) == "maiguru"
+    finally:
+        db.close()
+
+
+def test_mothers_younger_sister_is_mainini():
+    """Nuance 3b: all of a person's mother's younger sisters are called mainini."""
+    db = SessionLocal()
+    try:
+        mgf = Individual(name="MaternalGF", gender="male", birth_date="1930-01-01")
+        mgm = Individual(name="MaternalGM", gender="female", birth_date="1935-01-01")
+        amai = Individual(name="Amai", gender="female", birth_date="1973-01-01")
+        mainini = Individual(name="Mainini", gender="female", birth_date="1976-01-01")
+        baba = Individual(name="Baba", gender="male", birth_date="1970-01-01")
+        mwana = Individual(name="Mwana", gender="male", birth_date="2000-01-01")
+
+        db.add_all([mgf, mgm, amai, mainini, baba, mwana])
+        db.commit()
+
+        db.add_all([
+            Relationship(parent_id=mgf.id, child_id=amai.id, type="biological"),
+            Relationship(parent_id=mgm.id, child_id=amai.id, type="biological"),
+            Relationship(parent_id=mgf.id, child_id=mainini.id, type="biological"),
+            Relationship(parent_id=mgm.id, child_id=mainini.id, type="biological"),
+            Relationship(parent_id=amai.id, child_id=mwana.id, type="biological"),
+            Relationship(parent_id=baba.id, child_id=mwana.id, type="biological"),
+        ])
+        db.commit()
+
+        assert infer_relationship(db, mwana.id, mainini.id) == "aunt"
+        assert infer_shona_kinship(db, mwana.id, mainini.id) == "mainini"
+    finally:
+        db.close()

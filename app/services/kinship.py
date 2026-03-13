@@ -36,6 +36,16 @@ def _build_gender_map(db: Session) -> Dict[int, str]:
     return {individual_id: gender for individual_id, gender in rows}
 
 
+def _is_older_than(person: Optional[Individual], other: Optional[Individual]) -> Optional[bool]:
+    if not person or not other:
+        return None
+    if not person.birth_date or not other.birth_date:
+        return None
+    if person.birth_date == other.birth_date:
+        return None
+    return person.birth_date < other.birth_date
+
+
 def _distance_via_edges(graph: Dict[int, Set[int]], start_id: int, target_id: int) -> Optional[int]:
     if start_id == target_id:
         return 0
@@ -211,6 +221,7 @@ def get_shona_kinship(relationship: str, gender: Optional[str] = None) -> str:
 
 def infer_shona_kinship(db: Session, person_id: int, relative_id: int) -> str:
     relationship = infer_relationship(db, person_id, relative_id)
+    person = db.query(Individual).filter(Individual.id == person_id).first()
     relative = db.query(Individual).filter(Individual.id == relative_id).first()
     gender = relative.gender if relative else None
 
@@ -235,5 +246,21 @@ def infer_shona_kinship(db: Session, person_id: int, relative_id: int) -> str:
                 aunt_parents = parent_map.get(relative_id, set())
                 if father_parents and father_parents.intersection(aunt_parents):
                     return "tete"
+
+    # Nuance: a person's mother's older sisters are maiguru and younger sisters are mainini.
+    if relationship == "aunt":
+        parent_map = _build_parent_map(db)
+        gender_map = _build_gender_map(db)
+        for parent_id in parent_map.get(person_id, set()):
+            if gender_map.get(parent_id) == "female":  # this parent is the mother
+                mother = db.query(Individual).filter(Individual.id == parent_id).first()
+                mother_parents = parent_map.get(parent_id, set())
+                aunt_parents = parent_map.get(relative_id, set())
+                if mother_parents and mother_parents.intersection(aunt_parents):
+                    is_older = _is_older_than(relative, mother)
+                    if is_older is True:
+                        return "maiguru"
+                    if is_older is False:
+                        return "mainini"
 
     return get_shona_kinship(relationship, gender)
