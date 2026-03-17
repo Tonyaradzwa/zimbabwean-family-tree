@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models.family import Individual, Relationship, Marriage
 from app.services.kinship import infer_relationship, infer_shona_kinship
+from app.nlp.chat import answer_kinship_query
 from app import schemas
 from typing import List
 
@@ -176,3 +177,24 @@ def get_kinship(person_id: int, relative_id: int, db: Session = Depends(get_db))
         "english_relationship": english_relationship,
         "shona_relationship": shona_relationship,
     }
+
+
+@router.post("/query/", response_model=schemas.QueryResponse)
+def natural_language_query(req: schemas.QueryRequest, db: Session = Depends(get_db)):
+    """Accept a free-text English question and return a kinship answer.
+
+    The question is parsed by the OpenAI-backed NLP layer which extracts
+    the subject name and relationship term, then the kinship engine resolves
+    matching individuals from the database.
+
+    Raises HTTP 503 when the OpenAI package is not installed or the
+    OPENAI_API_KEY environment variable is missing.
+
+    TODO – swap the NLP back-end here (or in answer_kinship_query) to use
+    a rule-based or hybrid parser instead; see app/nlp/chat.py for details.
+    """
+    try:
+        result = answer_kinship_query(req.query, db)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    return result

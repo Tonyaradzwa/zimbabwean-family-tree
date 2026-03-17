@@ -54,3 +54,15 @@ class KinshipResult(BaseModel):
     relative_id: int
     english_relationship: str
     shona_relationship: str
+
+
+class QueryRequest(BaseModel):
+    query: str
+
+
+class QueryResponse(BaseModel):
+    query: str
+    subject_name: Optional[str] = None
+    subject_id: Optional[int] = None
+    relationship_asked: Optional[str] = None
+    answer: str

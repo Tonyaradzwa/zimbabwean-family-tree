@@ -106,6 +106,10 @@ def infer_relationship(db: Session, person_id: int, relative_id: int) -> str:
             return "wife"
         return "spouse"
 
+    # TODO: add explicit in-law inference paths (e.g. sister_in_law, brother_in_law,
+    #       mother_in_law, father_in_law). This currently only handles spouse,
+    #       blood relatives, and descendants/ancestors.
+
     ancestor_distance = _ancestor_distance(parent_map, person_id, relative_id)
     if ancestor_distance:
         return _make_ancestor_label(ancestor_distance, gender_map.get(relative_id))
