@@ -1,4 +1,5 @@
 import PeoplePanel from './components/PeoplePanel'
+import RelationshipsPanel from './components/RelationshipsPanel'
 
 export default function App() {
   return (
@@ -14,9 +15,9 @@ export default function App() {
           <PeoplePanel />
         </section>
 
-        <section className="panel">
+        <section className="panel wide">
           <h2>Relationships</h2>
-          <p>Link parent-child and marriage relationships.</p>
+          <RelationshipsPanel />
         </section>
 
         <section className="panel wide">

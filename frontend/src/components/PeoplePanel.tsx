@@ -168,6 +168,7 @@ export default function PeoplePanel() {
         {!loading && people.length === 0 ? <p>No people added yet.</p> : null}
 
         {!loading && people.length > 0 ? (
+          // TODO: Add virtualized/windowed list rendering here when people count grows large.
           <ul className="people-list">
             {people.map((person) => (
               <li key={person.id}>
