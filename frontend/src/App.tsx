@@ -1,3 +1,5 @@
+import PeoplePanel from './components/PeoplePanel'
+
 export default function App() {
   return (
     <div className="app-shell">
@@ -7,9 +9,9 @@ export default function App() {
       </header>
 
       <main className="layout">
-        <section className="panel">
+        <section className="panel wide">
           <h2>People</h2>
-          <p>Add and manage individuals here.</p>
+          <PeoplePanel />
         </section>
 
         <section className="panel">

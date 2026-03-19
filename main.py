@@ -13,7 +13,8 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Vite dev server
+    # Allow local dev frontends and Codespaces forwarded frontend URLs.
+    allow_origin_regex=r"^((https?://(localhost|127\.0\.0\.1)(:\d+)?)|(https://[a-z0-9-]+\.app\.github\.dev))$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

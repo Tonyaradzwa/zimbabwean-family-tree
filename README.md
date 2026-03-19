@@ -1,6 +1,6 @@
-# Zimbabwean Family Tree Backend
+# Zimbabwean Family Tree
 
-Production-ready backend for scalable Zimbabwean family trees with Shona kinship.
+Full-stack project for scalable Zimbabwean family trees with Shona kinship.
 
 ## Development
 

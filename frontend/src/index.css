@@ -76,9 +76,120 @@ body,
   line-height: 1.45;
 }
 
+.people-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.people-form,
+.people-list-wrap {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  background: #fcfeff;
+}
+
+.people-form h3,
+.people-list-wrap h3 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+}
+
+.people-form label {
+  display: block;
+  font-size: 0.83rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.people-form input,
+.people-form select {
+  width: 100%;
+  margin-top: 4px;
+  border: 1px solid #c7d3df;
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.people-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  background: #0f766e;
+  color: #fff;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+button.secondary {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+button.danger {
+  background: #dc2626;
+}
+
+.people-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.people-list li {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.person-text {
+  display: grid;
+  gap: 2px;
+}
+
+.person-text span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.person-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.error {
+  color: #b91c1c;
+  margin-top: 8px;
+  font-size: 0.84rem;
+}
+
 @media (max-width: 900px) {
   .panel,
   .panel.wide {
     grid-column: span 12;
+  }
+
+  .people-panel {
+    grid-template-columns: 1fr;
   }
 }
