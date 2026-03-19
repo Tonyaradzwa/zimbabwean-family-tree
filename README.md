@@ -6,14 +6,10 @@ Production-ready backend for scalable Zimbabwean family trees with Shona kinship
 
 ```bash
 # Install dependencies
-python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 
-# Run database migrations
-alembic upgrade head
-
-# Start server
-uvicorn app.main:app --reload
+# Start server  (always use python3 -m uvicorn to avoid interpreter mismatch)
+python3 -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### Running the test suite
