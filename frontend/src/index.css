@@ -227,6 +227,23 @@ button.danger {
   background: #fff;
 }
 
+.tree-canvas__surface {
+  height: 420px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.tree-canvas__status {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  color: var(--muted);
+  background: #fcfeff;
+}
+
 @media (max-width: 900px) {
   .panel,
   .panel.wide {

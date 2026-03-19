@@ -1,5 +1,6 @@
 import PeoplePanel from './components/PeoplePanel'
 import RelationshipsPanel from './components/RelationshipsPanel'
+import FamilyTreeCanvas from './components/FamilyTreeCanvas'
 
 export default function App() {
   return (
@@ -22,10 +23,7 @@ export default function App() {
 
         <section className="panel wide">
           <h2>Family Tree Canvas</h2>
-          <p>
-            Graph view placeholder. Once API wiring is added, this will render
-            people as nodes and relationships as edges.
-          </p>
+          <FamilyTreeCanvas />
         </section>
 
         <section className="panel">
