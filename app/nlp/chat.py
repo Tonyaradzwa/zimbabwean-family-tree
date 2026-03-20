@@ -40,6 +40,7 @@ except ImportError:  # pragma: no cover
 # Fuzzy-match cutoff: 0.0 = anything goes, 1.0 = exact only.
 # 0.8 catches single-character swaps while avoiding false positives on short names.
 _FUZZY_CUTOFF = 0.8
+_OPENAI_TIMEOUT_SECONDS = float(os.environ.get("OPENAI_TIMEOUT_SECONDS", "15"))
 
 # ---------------------------------------------------------------------------
 # System prompt – keep it narrow so the model always returns parseable JSON.
@@ -122,15 +123,22 @@ def _parse_intent(query: str) -> dict:
             "OPENAI_API_KEY environment variable is not set."
         )
 
-    response = _openai_client.chat.completions.create(
-        model="gpt-4o-mini",  # TODO: make configurable via env var MODEL_NAME
-        messages=[
-            {"role": "system", "content": _SYSTEM_PROMPT},
-            {"role": "user", "content": query},
-        ],
-        temperature=0,
-        max_tokens=64,
-    )
+    try:
+        response = _openai_client.chat.completions.create(
+            model="gpt-4o-mini",  # TODO: make configurable via env var MODEL_NAME
+            messages=[
+                {"role": "system", "content": _SYSTEM_PROMPT},
+                {"role": "user", "content": query},
+            ],
+            temperature=0,
+            max_tokens=64,
+            timeout=_OPENAI_TIMEOUT_SECONDS,
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            "NLP provider request failed or timed out. "
+            "Try again, or verify OPENAI_API_KEY and network connectivity."
+        ) from exc
 
     raw = response.choices[0].message.content.strip()
     return json.loads(raw)

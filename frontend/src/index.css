@@ -244,6 +244,87 @@ button.danger {
   background: #fcfeff;
 }
 
+.nlp-query-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.nlp-query-form {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fcfeff;
+  padding: 12px;
+}
+
+.nlp-query-form label {
+  display: block;
+  font-size: 0.83rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.nlp-query-form textarea {
+  width: 100%;
+  border: 1px solid #c7d3df;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  background: #fff;
+  resize: vertical;
+  min-height: 92px;
+}
+
+.nlp-query-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.nlp-query-examples h3,
+.nlp-query-result h3 {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+}
+
+.nlp-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.nlp-chip {
+  padding: 6px 8px;
+  font-size: 0.8rem;
+}
+
+.nlp-query-result {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fcfeff;
+  padding: 12px;
+}
+
+.nlp-query-result p {
+  margin: 0 0 8px;
+  color: #0f172a;
+}
+
+.nlp-query-result dl {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.nlp-query-result dt {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.nlp-query-result dd {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
 @media (max-width: 900px) {
   .panel,
   .panel.wide {

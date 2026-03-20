@@ -1,6 +1,7 @@
 import PeoplePanel from './components/PeoplePanel'
 import RelationshipsPanel from './components/RelationshipsPanel'
 import FamilyTreeCanvas from './components/FamilyTreeCanvas'
+import NlpQueryPanel from './components/NlpQueryPanel'
 
 export default function App() {
   return (
@@ -33,7 +34,7 @@ export default function App() {
 
         <section className="panel">
           <h2>NLP Query</h2>
-          <p>Ask natural language family questions.</p>
+          <NlpQueryPanel />
         </section>
       </main>
     </div>
