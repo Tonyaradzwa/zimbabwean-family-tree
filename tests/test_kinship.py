@@ -284,3 +284,79 @@ def test_male_speaker_sibling_terms():
         assert infer_shona_kinship(db, speaker.id, brother.id) == "mukoma"
     finally:
         db.close()
+
+
+def test_in_law_relationships_and_shona_terms():
+    db = SessionLocal()
+    try:
+        # Parents of spouse (these become in-laws of Mwana).
+        baba = Individual(name="Baba", gender="male", birth_date="1970-01-01")
+        amai = Individual(name="Amai", gender="female", birth_date="1972-01-01")
+
+        # Parents of Mwana and Sister (separate branch from in-laws).
+        own_parent1 = Individual(name="OwnParent1", gender="male", birth_date="1968-01-01")
+        own_parent2 = Individual(name="OwnParent2", gender="female", birth_date="1971-01-01")
+
+        # Core family
+        mwana = Individual(name="Mwana", gender="male", birth_date="1998-01-01")
+
+        # Spouse side and sibling side
+        spouse = Individual(name="Spouse", gender="female", birth_date="2000-01-01")
+        spouse_brother = Individual(name="SpouseBrother", gender="male", birth_date="2002-01-01")
+        sister = Individual(name="Sister", gender="female", birth_date="1996-01-01")
+        sisters_husband = Individual(name="SistersHusband", gender="male", birth_date="1995-01-01")
+
+        # Child in-law
+        child = Individual(name="Child", gender="female", birth_date="2022-01-01")
+        child_husband = Individual(name="ChildHusband", gender="male", birth_date="2020-01-01")
+
+        db.add_all([
+            baba,
+            amai,
+            own_parent1,
+            own_parent2,
+            mwana,
+            spouse,
+            spouse_brother,
+            sister,
+            sisters_husband,
+            child,
+            child_husband,
+        ])
+        db.commit()
+
+        db.add_all([
+            # Parents of spouse and spouse's sibling
+            Relationship(parent_id=baba.id, child_id=spouse.id, type="biological"),
+            Relationship(parent_id=amai.id, child_id=spouse.id, type="biological"),
+            Relationship(parent_id=baba.id, child_id=spouse_brother.id, type="biological"),
+            Relationship(parent_id=amai.id, child_id=spouse_brother.id, type="biological"),
+            # Parents of Mwana and sibling
+            Relationship(parent_id=own_parent1.id, child_id=mwana.id, type="biological"),
+            Relationship(parent_id=own_parent2.id, child_id=mwana.id, type="biological"),
+            Relationship(parent_id=own_parent1.id, child_id=sister.id, type="biological"),
+            Relationship(parent_id=own_parent2.id, child_id=sister.id, type="biological"),
+            # Mwana's child
+            Relationship(parent_id=mwana.id, child_id=child.id, type="biological"),
+            Relationship(parent_id=spouse.id, child_id=child.id, type="biological"),
+        ])
+        db.add_all([
+            Marriage(partner1_id=mwana.id, partner2_id=spouse.id, date="2021-01-01"),
+            Marriage(partner1_id=sister.id, partner2_id=sisters_husband.id, date="2019-01-01"),
+            Marriage(partner1_id=child.id, partner2_id=child_husband.id, date="2040-01-01"),
+        ])
+        db.commit()
+
+        assert infer_relationship(db, mwana.id, baba.id) == "father_in_law"
+        assert infer_relationship(db, mwana.id, amai.id) == "mother_in_law"
+        assert infer_relationship(db, mwana.id, spouse_brother.id) == "brother_in_law"
+        assert infer_relationship(db, mwana.id, sisters_husband.id) == "brother_in_law"
+        assert infer_relationship(db, mwana.id, child_husband.id) == "son_in_law"
+
+        assert infer_shona_kinship(db, mwana.id, baba.id) == "tezvara"
+        assert infer_shona_kinship(db, mwana.id, amai.id) == "vamwene"
+        assert infer_shona_kinship(db, mwana.id, spouse_brother.id) == "muramu"
+        assert infer_shona_kinship(db, mwana.id, sisters_husband.id) == "muramu"
+        assert infer_shona_kinship(db, mwana.id, child_husband.id) == "mukuwasha"
+    finally:
+        db.close()

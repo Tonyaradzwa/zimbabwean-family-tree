@@ -106,10 +106,6 @@ def infer_relationship(db: Session, person_id: int, relative_id: int) -> str:
             return "wife"
         return "spouse"
 
-    # TODO: add explicit in-law inference paths (e.g. sister_in_law, brother_in_law,
-    #       mother_in_law, father_in_law). This currently only handles spouse,
-    #       blood relatives, and descendants/ancestors.
-
     ancestor_distance = _ancestor_distance(parent_map, person_id, relative_id)
     if ancestor_distance:
         return _make_ancestor_label(ancestor_distance, gender_map.get(relative_id))
@@ -177,6 +173,73 @@ def infer_relationship(db: Session, person_id: int, relative_id: int) -> str:
     if person_grandparents and relative_grandparents and person_grandparents.intersection(relative_grandparents):
         return "cousin"
 
+    # In-law inference paths.
+    spouses = spouse_map.get(person_id, set())
+    if spouses:
+        # Parent-in-law: spouse's parents.
+        spouses_parents: Set[int] = set()
+        for spouse_id in spouses:
+            spouses_parents.update(parent_map.get(spouse_id, set()))
+        if relative_id in spouses_parents:
+            relative_gender = gender_map.get(relative_id)
+            if relative_gender == "male":
+                return "father_in_law"
+            if relative_gender == "female":
+                return "mother_in_law"
+            return "parent_in_law"
+
+        # Sibling-in-law path 1: spouse's siblings.
+        spouses_siblings: Set[int] = set()
+        for spouse_id in spouses:
+            spouse_parents = parent_map.get(spouse_id, set())
+            if not spouse_parents:
+                continue
+            for maybe_sibling_id, maybe_sibling_parents in parent_map.items():
+                if maybe_sibling_id == spouse_id:
+                    continue
+                if spouse_parents.intersection(maybe_sibling_parents):
+                    spouses_siblings.add(maybe_sibling_id)
+        if relative_id in spouses_siblings:
+            relative_gender = gender_map.get(relative_id)
+            if relative_gender == "male":
+                return "brother_in_law"
+            if relative_gender == "female":
+                return "sister_in_law"
+            return "sibling_in_law"
+
+    # Build siblings from the person's own parent set for remaining in-law checks.
+    siblings = set()
+    for maybe_sibling_id, maybe_sibling_parents in parent_map.items():
+        if maybe_sibling_id == person_id:
+            continue
+        if person_parents and person_parents.intersection(maybe_sibling_parents):
+            siblings.add(maybe_sibling_id)
+
+    # Sibling-in-law path 2: sibling's spouse.
+    siblings_spouses: Set[int] = set()
+    for sibling_id in siblings:
+        siblings_spouses.update(spouse_map.get(sibling_id, set()))
+    if relative_id in siblings_spouses:
+        relative_gender = gender_map.get(relative_id)
+        if relative_gender == "male":
+            return "brother_in_law"
+        if relative_gender == "female":
+            return "sister_in_law"
+        return "sibling_in_law"
+
+    # Child-in-law: child's spouse.
+    children = child_map.get(person_id, set())
+    childrens_spouses: Set[int] = set()
+    for child_id in children:
+        childrens_spouses.update(spouse_map.get(child_id, set()))
+    if relative_id in childrens_spouses:
+        relative_gender = gender_map.get(relative_id)
+        if relative_gender == "male":
+            return "son_in_law"
+        if relative_gender == "female":
+            return "daughter_in_law"
+        return "child_in_law"
+
     return "relative"
 
 
@@ -212,6 +275,15 @@ def get_shona_kinship(
         "nephew": "muzukuru",
         "niece": "muzukuru",
         "cousin": "hama",
+        "father_in_law": "tezvara",
+        "mother_in_law": "vamwene",
+        "parent_in_law": "mubereki wemurume kana mukadzi",
+        "brother_in_law": "muramu",
+        "sister_in_law": "muramu",
+        "sibling_in_law": "muramu",
+        "son_in_law": "mukuwasha",
+        "daughter_in_law": "muroora",
+        "child_in_law": "mwana wemumba",
         "ancestor": "mudzinza wekare",
         "descendant": "wemudzinza",
         "relative": "hama",

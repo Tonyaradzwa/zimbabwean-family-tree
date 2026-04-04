@@ -12,6 +12,15 @@ pip install -r requirements.txt
 python3 -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+### Environment Variables
+
+Set variables in your shell before starting the backend:
+
+```bash
+export OPENAI_API_KEY=your_real_key_here
+export OPENAI_TIMEOUT_SECONDS=15
+```
+
 ### Running the test suite
 
 A basic integration test suite exercises the individuals CRUD endpoints using

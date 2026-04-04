@@ -73,6 +73,17 @@ export default function RelationshipsPanel() {
     void loadData()
   }, [])
 
+  useEffect(() => {
+    function handlePeopleUpdated() {
+      void loadData()
+    }
+
+    window.addEventListener('people-updated', handlePeopleUpdated)
+    return () => {
+      window.removeEventListener('people-updated', handlePeopleUpdated)
+    }
+  }, [])
+
   function getName(id: number): string {
     const person = people.find((p) => p.id === id)
     return person ? person.name : `#${id}`

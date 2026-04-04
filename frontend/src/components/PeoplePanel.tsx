@@ -30,6 +30,10 @@ export default function PeoplePanel() {
 
   const isEditing = editingId !== null
 
+  function notifyPeopleUpdated() {
+    window.dispatchEvent(new Event('people-updated'))
+  }
+
   const submitLabel = useMemo(() => {
     if (submitting) return isEditing ? 'Updating...' : 'Adding...'
     return isEditing ? 'Update person' : 'Add person'
@@ -84,6 +88,7 @@ export default function PeoplePanel() {
       }
       resetForm()
       await refreshPeople()
+      notifyPeopleUpdated()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     } finally {
@@ -99,6 +104,7 @@ export default function PeoplePanel() {
         resetForm()
       }
       await refreshPeople()
+      notifyPeopleUpdated()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
     }
